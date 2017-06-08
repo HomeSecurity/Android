@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">HomeSecurity</string>
+
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+
+    <string name="action_settings">Einstellungen</string>
+    <string name="edit_message">Gib eine Nachricht ein</string>
+    <string name="button_send">Senden</string>
+    <string name="title_activity_display_message">Benachrichtigungen</string>
+</resources>
