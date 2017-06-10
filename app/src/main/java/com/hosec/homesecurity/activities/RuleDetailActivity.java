@@ -2,7 +2,6 @@ package com.hosec.homesecurity.activities;
 
 
 import android.content.Intent;
-import android.support.v4.animation.AnimatorCompatHelper;
 import android.support.v4.content.res.ResourcesCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
@@ -24,29 +23,55 @@ import com.hosec.homesecurity.model.ListItemInformation;
 import com.hosec.homesecurity.model.Rule;
 import com.hosec.homesecurity.remote.RemoteAlarmSystem;
 
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import static android.os.Build.VERSION_CODES.M;
 
-
-public class RuleDetailActivity extends AppCompatActivity {
+public class RuleDetailActivity extends AppCompatActivity
+        implements AddDeviceToRuleDialog.AddDeviceDialogListener {
 
     public static final String RULE_KEY = "RULE";
     public static final String NEW_KEY = "NEW";
 
+    private static final String DIALOG_KEY = "ADD_DEVICE";
     private static final String TAB_SENSOR = "TAB_SENSOR";
     private static final int SENSOR_TAB_INDEX = 0;
     private static final String TAB_ACTOR = "TAB_ACTOR";
 
-    private RuleListFragment mSensorListFragment;
-    private RuleListFragment mActorListFragment;
+    private GeneralListFragment mSensorListFragment;
+    private GeneralListFragment mActorListFragment;
     private Rule mRule;
     private EditText mEditTextName;
     private Switch mActiveSwitch;
     private TabHost mHost;
     private boolean isNewRule;
+
+    private View.OnClickListener mAddListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            v.startAnimation(AnimationUtils.loadAnimation(v.getContext(), R.anim.on_click_to_accent));
+
+            AddDeviceToRuleDialog dialog = new AddDeviceToRuleDialog();
+            Bundle bundle = new Bundle();
+            GeneralListFragment frag = getCurrentDeviceListFragment();
+
+            bundle.putBoolean(AddDeviceToRuleDialog.SENSOR_KEY, isSensorTabSelected());
+            bundle.putSerializable(AddDeviceToRuleDialog.KNOWN_DEVICES_KEY, getListItemsAsDeviceList(frag.getData()));
+            dialog.setArguments(bundle);
+            dialog.show(getSupportFragmentManager(), DIALOG_KEY);
+        }
+    };
+
+    private View.OnClickListener mDeleteListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            v.startAnimation(AnimationUtils.loadAnimation(v.getContext(), R.anim.on_click_to_accent));
+            onRemove();
+        }
+    };
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -74,9 +99,9 @@ public class RuleDetailActivity extends AppCompatActivity {
         Intent intent = getIntent();
         isNewRule = intent.getBooleanExtra(NEW_KEY, false);
         mRule = (Rule) intent.getSerializableExtra(RULE_KEY);
-        mSensorListFragment = (RuleListFragment) getSupportFragmentManager().findFragmentById(R.id.sensorList);
+        mSensorListFragment = (GeneralListFragment) getSupportFragmentManager().findFragmentById(R.id.sensorList);
         mSensorListFragment.setData(DetailDeviceItemInfo.createDetailDeviceItemInformation(mRule.getSensors()));
-        mActorListFragment = (RuleListFragment) getSupportFragmentManager().findFragmentById(R.id.actorList);
+        mActorListFragment = (GeneralListFragment) getSupportFragmentManager().findFragmentById(R.id.actorList);
         mActorListFragment.setData(DetailDeviceItemInfo.createDetailDeviceItemInformation(mRule.getActors()));
 
         mEditTextName = (EditText) findViewById(R.id.etName);
@@ -85,26 +110,13 @@ public class RuleDetailActivity extends AppCompatActivity {
         mActiveSwitch.setChecked(mRule.active());
 
         //prepare icon buttons
-        findViewById(R.id.ivAdd).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                v.startAnimation(AnimationUtils.loadAnimation(v.getContext(), R.anim.on_click_to_accent));
-
-            }
-        });
-        findViewById(R.id.ivDelete).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                v.startAnimation(AnimationUtils.loadAnimation(v.getContext(), R.anim.on_click_to_accent));
-                onRemove();
-            }
-        });
+        findViewById(R.id.ivAdd).setOnClickListener(mAddListener);
+        findViewById(R.id.ivDelete).setOnClickListener(mDeleteListener);
 
     }
 
     private void onRemove() {
-        RuleListFragment frag = mHost.getCurrentTab() == SENSOR_TAB_INDEX ?
-                mSensorListFragment : mActorListFragment;
+        GeneralListFragment frag = getCurrentDeviceListFragment();
 
         List<? extends ListItemInformation> list = frag.getData();
         Iterator<? extends ListItemInformation> iter = list.iterator();
@@ -117,6 +129,21 @@ public class RuleDetailActivity extends AppCompatActivity {
         frag.setData(list);
     }
 
+    private boolean isSensorTabSelected() {
+        return mHost.getCurrentTab() == SENSOR_TAB_INDEX;
+    }
+
+    private GeneralListFragment getCurrentDeviceListFragment(){
+        return isSensorTabSelected() ? mSensorListFragment : mActorListFragment;
+    }
+
+    private ArrayList<Device> getListItemsAsDeviceList(List<? extends ListItemInformation> list) {
+        ArrayList<Device> devices = new ArrayList<>();
+        for (ListItemInformation info : list) {
+            devices.add(((DetailDeviceItemInfo) info).getDevice());
+        }
+        return devices;
+    }
 
     private void markSelectedTab() {
         final int COLOR_SELECTED = ResourcesCompat.getColor(getResources(), R.color.colorAccent, null);
@@ -146,16 +173,8 @@ public class RuleDetailActivity extends AppCompatActivity {
             @Override
             public boolean onMenuItemClick(MenuItem item) {
 
-                ArrayList<Device> newSensors = new ArrayList<>();
-                ArrayList<Device> newActors = new ArrayList<>();
-
-                for (ListItemInformation info : mActorListFragment.getData()) {
-                    newActors.add(((DetailDeviceItemInfo) info).getDevice());
-                }
-
-                for (ListItemInformation info : mSensorListFragment.getData()) {
-                    newSensors.add(((DetailDeviceItemInfo) info).getDevice());
-                }
+                ArrayList<Device> newSensors = getListItemsAsDeviceList(mSensorListFragment.getData());
+                ArrayList<Device> newActors = getListItemsAsDeviceList(mActorListFragment.getData());
 
                 mRule.setName(mEditTextName.getText().toString());
                 mRule.setActive(mActiveSwitch.isChecked());
@@ -173,5 +192,22 @@ public class RuleDetailActivity extends AppCompatActivity {
         });
 
         return true;
+    }
+
+    @Override
+    public void onDialogPositiveClick(AddDeviceToRuleDialog dialog) {
+        GeneralListFragment frag = getCurrentDeviceListFragment();
+        List<Device> devices = getListItemsAsDeviceList(frag.getData());
+        devices.addAll(dialog.getNewSelections());
+        frag.setData(DetailDeviceItemInfo.createDetailDeviceItemInformation(devices));
+    }
+
+    @Override
+    public void onDialogNegativeClick(AddDeviceToRuleDialog dialog) {
+
+    }
+
+    public void testConnection(URL url){
+
     }
 }

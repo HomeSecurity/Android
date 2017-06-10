@@ -53,27 +53,27 @@ public class RemoteAlarmSystem {
         dummySensors.add(deviceList.get(3));
 
 
-        ruleList.add(new Rule(1,true, dummySensors, dummyActors, "Rule 1"));
-        ruleList.add(new Rule(2,true, dummySensors, dummyActors, "Rule 2"));
+        ruleList.add(new Rule(1, true, dummySensors, dummyActors, "Rule 1"));
+        ruleList.add(new Rule(2, true, dummySensors, dummyActors, "Rule 2"));
 
     }
 
 
     public static List<Notification> getAllNotifications() {
-        return notificationList;
+        return new ArrayList<>(notificationList);
     }
 
     public static List<Device> getAllDevices() {
-        return deviceList;
+        return new ArrayList<>(deviceList);
     }
 
     public static List<Rule> getAllRules() {
-        return ruleList;
+        return new ArrayList<>(ruleList);
     }
 
-    public static void updateDeviceInformation(Device device){
-        for(Device d : deviceList){
-            if(d.getID() == device.getID()){
+    public static void updateDeviceInformation(Device device) {
+        for (Device d : deviceList) {
+            if (d.getID() == device.getID()) {
                 d.setState(device.getState());
                 d.setUrl(device.getUrl());
                 d.setName(device.getName());
@@ -82,9 +82,9 @@ public class RemoteAlarmSystem {
         }
     }
 
-    public static void updateRuleInformation(Rule rule){
-        for(Rule r : ruleList){
-            if(r.getID() == rule.getID()){
+    public static void updateRuleInformation(Rule rule) {
+        for (Rule r : ruleList) {
+            if (r.getID() == rule.getID()) {
                 ruleList.remove(r);
                 ruleList.add(rule);
                 break;
@@ -92,11 +92,22 @@ public class RemoteAlarmSystem {
         }
     }
 
-    public static void addNewRule(Rule rule){
-        rule.setID(ruleList.get(ruleList.size()-1).getID()+1);
+    public static void addNewRule(Rule rule) {
+        rule.setID(ruleList.get(ruleList.size() - 1).getID() + 1);
         ruleList.add(rule);
     }
 
+    public static void changePassword(String newPassword){
+
+    }
+
+    public static void changeUsername(String newUsername){
+
+    }
+
+    public static boolean checkSystem(String hostname, String username, String password){
+        return hostname.equals("hosec.com")&& username.equals("test") && password.equals("1234");
+    }
 
 
 }

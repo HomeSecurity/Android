@@ -35,7 +35,7 @@ public class DeviceItemInformation extends ListItemInformation {
 
     @Override
     public String getSubtitle() {
-        return mDevice.getState().toString();
+        return mDevice.getType().toString()+", "+mDevice.getState().toString();
     }
 
     @Override

@@ -13,24 +13,20 @@ import android.widget.TextView;
 import com.hosec.homesecurity.R;
 import com.hosec.homesecurity.model.ListItemInformation;
 
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 
 /**
  * A simple {@link Fragment} subclass.
  */
-public class RuleListFragment extends Fragment {
+public class GeneralListFragment extends Fragment {
 
 
     private RecyclerView mRecyclerView;
     private TextView mTextView;
     private List<? extends ListItemInformation> mListItemInformation;
 
-    public RuleListFragment() {
+    public GeneralListFragment() {
         // Required empty public constructor
     }
 

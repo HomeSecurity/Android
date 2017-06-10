@@ -2,6 +2,8 @@ package com.hosec.homesecurity.activities;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.preference.PreferenceFragment;
+import android.preference.PreferenceManager;
 import android.support.design.widget.BottomNavigationView;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -20,7 +22,7 @@ public class HomeActivity extends AppCompatActivity {
 
     public static final int REQUEST_CODE_DETAIL = 1;
     private MenuItem mAddButton;
-    private RuleListFragment mRuleListFragment;
+    private GeneralListFragment mGeneralListFragment;
     private BottomNavigationView mBottomNavigation;
 
     private MenuItem.OnMenuItemClickListener mAddRuleListener = new MenuItem.OnMenuItemClickListener() {
@@ -41,24 +43,34 @@ public class HomeActivity extends AppCompatActivity {
         }
     };
 
+    private MenuItem.OnMenuItemClickListener mSettingsListener = new MenuItem.OnMenuItemClickListener() {
+        @Override
+        public boolean onMenuItemClick(MenuItem item) {
+            Intent intent = new Intent(HomeActivity.this,SettingsActivity.class);
+
+            startActivity(intent);
+            return true;
+        }
+    };
+
 
     private boolean prepareContent(MenuItem item) {
 
         switch (item.getItemId()) {
             case R.id.navigation_devices:
-                mRuleListFragment.setData(DeviceItemInformation
+                mGeneralListFragment.setData(DeviceItemInformation
                         .createDeviceItemInformation(RemoteAlarmSystem.getAllDevices()));
                 mAddButton.setVisible(true);
                 mAddButton.setOnMenuItemClickListener(mAddDeviceListener);
                 return true;
             case R.id.navigation_rules:
-                mRuleListFragment.setData(RuleItemInformation
+                mGeneralListFragment.setData(RuleItemInformation
                         .createRuleItemInformation(RemoteAlarmSystem.getAllRules()));
                 mAddButton.setVisible(true);
                 mAddButton.setOnMenuItemClickListener(mAddRuleListener);
                 return true;
             case R.id.navigation_notifications:
-                mRuleListFragment.setData(NotificationItemInformation
+                mGeneralListFragment.setData(NotificationItemInformation
                         .createNotificationItemInformation(RemoteAlarmSystem.getAllNotifications()));
                 mAddButton.setVisible(false);
                 return true;
@@ -72,6 +84,8 @@ public class HomeActivity extends AppCompatActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.home_menu, menu);
+        MenuItem settings = ((Toolbar) findViewById(R.id.home_toolbar)).getMenu().findItem(R.id.action_settings);
+        settings.setOnMenuItemClickListener(mSettingsListener);
         mAddButton = ((Toolbar) findViewById(R.id.home_toolbar)).getMenu().findItem(R.id.action_add);
         prepareContent(mBottomNavigation.getMenu().findItem(mBottomNavigation.getSelectedItemId()));
 
@@ -91,6 +105,24 @@ public class HomeActivity extends AppCompatActivity {
         Toolbar toolBar = (Toolbar) findViewById(R.id.home_toolbar);
         setSupportActionBar(toolBar);
 
+        String hostname = PreferenceManager.getDefaultSharedPreferences(this).getString(
+                ChangeSystemDialog.SYSTEM_PREF_KEY,
+                ChangeSystemDialog.DEFAULT_VALUE);
+
+        String username = PreferenceManager.getDefaultSharedPreferences(this).getString(
+                ChangeUsernameDialog.KEY,
+                ChangeUsernameDialog.DEFAULT_VALUE);
+
+        String password = PreferenceManager.getDefaultSharedPreferences(this).getString(
+                ChangePasswordDialog.KEY,
+                ChangePasswordDialog.DEFAULT_VALUE);
+
+        if(!RemoteAlarmSystem.checkSystem(hostname,username,password)){
+            Intent intent = new Intent(this, LoginActivity.class);
+            startActivity(intent);
+            finish();
+        }
+
 
     }
 
@@ -98,7 +130,7 @@ public class HomeActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
 
-        mRuleListFragment = (RuleListFragment) getSupportFragmentManager()
+        mGeneralListFragment = (GeneralListFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.ruleList);
 
         mBottomNavigation = (BottomNavigationView) findViewById(R.id.navigation);
