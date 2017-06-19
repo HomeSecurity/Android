@@ -1,14 +1,18 @@
 package com.hosec.homesecurity.model;
 
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.Serializable;
+import java.net.MalformedURLException;
 import java.net.URL;
 
 /**
  * Created by D062572 on 29.05.2017.
  */
 
-public class Device implements Serializable{
+public class Device implements Serializable {
 
     public enum State {
         OFFLINE,
@@ -33,6 +37,17 @@ public class Device implements Serializable{
     private Type mType;
     private InterfaceType mInterfaceType;
     private URL mUrl;
+
+    public Device(JSONObject json) throws JSONException, MalformedURLException {
+        this(json.getLong("id"),
+                json.getString("name"),
+                json.getString("description"),
+                State.valueOf(json.getString("state")),
+                Type.valueOf(json.getString("type")),
+                InterfaceType.valueOf(json.getString("interface")),
+                InterfaceType.valueOf(json.getString("interface")) != InterfaceType.IP ?
+                        null : new URL(json.getString("url")));
+    }
 
     public Device(long mID, String mName, String mDescription, State mState, Type mType,
                   InterfaceType interfaceType, URL url) {

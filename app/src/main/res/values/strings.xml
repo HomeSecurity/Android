@@ -30,6 +30,8 @@
     <string name="hostname_or_ip_address">Enter hostname or IP address</string>
     <string name="username">Username</string>
     <string name="password">Password</string>
+    <string name="Successful_Login">Successfully logged in</string>
+    <string name="invalid_json">Invalid JSON</string>
 
 
 </resources>

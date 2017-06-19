@@ -56,7 +56,9 @@
                 android:value=".activities.HomeActivity" />
         </activity>
         <activity android:name=".activities.SettingsActivity" />
-        <activity android:name=".activities.LoginActivity" android:theme="@style/AppTheme.NoActionBar"/>
+        <activity android:name=".activities.LoginActivity"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:windowSoftInputMode="stateHidden"/>
     </application>
 
 </manifest>

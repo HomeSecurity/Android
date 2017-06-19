@@ -21,7 +21,7 @@ import com.hosec.homesecurity.model.DetailDeviceItemInfo;
 import com.hosec.homesecurity.model.Device;
 import com.hosec.homesecurity.model.ListItemInformation;
 import com.hosec.homesecurity.model.Rule;
-import com.hosec.homesecurity.remote.RemoteAlarmSystem;
+import com.hosec.homesecurity.remote.TestRemoteAlarmSystem;
 
 import java.net.URL;
 import java.util.ArrayList;
@@ -182,9 +182,9 @@ public class RuleDetailActivity extends AppCompatActivity
                 mRule.setActors(newActors);
                 mRule.setSensors(newSensors);
                 if (isNewRule) {
-                    RemoteAlarmSystem.addNewRule(mRule);
+                    TestRemoteAlarmSystem.addNewRule(mRule);
                 } else {
-                    RemoteAlarmSystem.updateRuleInformation(mRule);
+                    TestRemoteAlarmSystem.updateRuleInformation(mRule);
                 }
                 finish();
                 return true;

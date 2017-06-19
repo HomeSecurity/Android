@@ -2,7 +2,6 @@ package com.hosec.homesecurity.activities;
 
 import android.app.AlertDialog;
 import android.content.Context;
-import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.preference.DialogPreference;
@@ -12,7 +11,6 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import com.hosec.homesecurity.R;
-import com.hosec.homesecurity.remote.RemoteAlarmSystem;
 
 /**
  * Created by D062572 on 10.06.2017.

@@ -2,20 +2,25 @@ package com.hosec.homesecurity.activities;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.preference.PreferenceFragment;
-import android.preference.PreferenceManager;
 import android.support.design.widget.BottomNavigationView;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Toast;
 
 import com.hosec.homesecurity.R;
+import com.hosec.homesecurity.model.Credentials;
 import com.hosec.homesecurity.model.DeviceItemInformation;
 import com.hosec.homesecurity.model.NotificationItemInformation;
 import com.hosec.homesecurity.model.Rule;
 import com.hosec.homesecurity.model.RuleItemInformation;
 import com.hosec.homesecurity.remote.RemoteAlarmSystem;
+import com.hosec.homesecurity.remote.TestRemoteAlarmSystem;
+
+import java.util.ArrayList;
+
 
 
 public class HomeActivity extends AppCompatActivity {
@@ -24,14 +29,17 @@ public class HomeActivity extends AppCompatActivity {
     private MenuItem mAddButton;
     private GeneralListFragment mGeneralListFragment;
     private BottomNavigationView mBottomNavigation;
+    private RemoteAlarmSystem mRemoteAlarmSystem;
+
+
 
     private MenuItem.OnMenuItemClickListener mAddRuleListener = new MenuItem.OnMenuItemClickListener() {
         @Override
         public boolean onMenuItemClick(MenuItem item) {
-            Intent intent = new Intent(HomeActivity.this,RuleDetailActivity.class);
-            intent.putExtra(RuleDetailActivity.RULE_KEY,new Rule(false));
-            intent.putExtra(RuleDetailActivity.NEW_KEY,true);
-            startActivityForResult(intent,REQUEST_CODE_DETAIL);
+            Intent intent = new Intent(HomeActivity.this, RuleDetailActivity.class);
+            intent.putExtra(RuleDetailActivity.RULE_KEY, new Rule(false));
+            intent.putExtra(RuleDetailActivity.NEW_KEY, true);
+            startActivityForResult(intent, REQUEST_CODE_DETAIL);
             return true;
         }
     };
@@ -46,7 +54,7 @@ public class HomeActivity extends AppCompatActivity {
     private MenuItem.OnMenuItemClickListener mSettingsListener = new MenuItem.OnMenuItemClickListener() {
         @Override
         public boolean onMenuItemClick(MenuItem item) {
-            Intent intent = new Intent(HomeActivity.this,SettingsActivity.class);
+            Intent intent = new Intent(HomeActivity.this, SettingsActivity.class);
 
             startActivity(intent);
             return true;
@@ -58,26 +66,28 @@ public class HomeActivity extends AppCompatActivity {
 
         switch (item.getItemId()) {
             case R.id.navigation_devices:
+
                 mGeneralListFragment.setData(DeviceItemInformation
-                        .createDeviceItemInformation(RemoteAlarmSystem.getAllDevices()));
+                        .createDeviceItemInformation(mRemoteAlarmSystem.getDeviceList()));
                 mAddButton.setVisible(true);
                 mAddButton.setOnMenuItemClickListener(mAddDeviceListener);
                 return true;
+
             case R.id.navigation_rules:
                 mGeneralListFragment.setData(RuleItemInformation
-                        .createRuleItemInformation(RemoteAlarmSystem.getAllRules()));
+                        .createRuleItemInformation(mRemoteAlarmSystem.getRuleList()));
                 mAddButton.setVisible(true);
                 mAddButton.setOnMenuItemClickListener(mAddRuleListener);
                 return true;
+
             case R.id.navigation_notifications:
                 mGeneralListFragment.setData(NotificationItemInformation
-                        .createNotificationItemInformation(RemoteAlarmSystem.getAllNotifications()));
+                        .createNotificationItemInformation(TestRemoteAlarmSystem.getAllNotifications()));
                 mAddButton.setVisible(false);
                 return true;
         }
         return false;
     }
-
 
 
     @Override
@@ -105,23 +115,37 @@ public class HomeActivity extends AppCompatActivity {
         Toolbar toolBar = (Toolbar) findViewById(R.id.home_toolbar);
         setSupportActionBar(toolBar);
 
-        String hostname = PreferenceManager.getDefaultSharedPreferences(this).getString(
-                ChangeSystemDialog.SYSTEM_PREF_KEY,
-                ChangeSystemDialog.DEFAULT_VALUE);
+        Credentials creds = Credentials.getStoredCredentials(this);
 
-        String username = PreferenceManager.getDefaultSharedPreferences(this).getString(
-                ChangeUsernameDialog.KEY,
-                ChangeUsernameDialog.DEFAULT_VALUE);
 
-        String password = PreferenceManager.getDefaultSharedPreferences(this).getString(
-                ChangePasswordDialog.KEY,
-                ChangePasswordDialog.DEFAULT_VALUE);
+        final RemoteAlarmSystem.ResultListener listener = new RemoteAlarmSystem.ResultListener() {
+            @Override
+            public void onResult(RemoteAlarmSystem.Result result) {
+                if(result.success){
+                    prepareContent(mBottomNavigation.getMenu().findItem(mBottomNavigation.getSelectedItemId()));
+                }else{
+                    Toast.makeText(HomeActivity.this, result.message,Toast.LENGTH_SHORT).show();
+                }
+            }
+        };
 
-        if(!RemoteAlarmSystem.checkSystem(hostname,username,password)){
-            Intent intent = new Intent(this, LoginActivity.class);
-            startActivity(intent);
-            finish();
-        }
+        mRemoteAlarmSystem = RemoteAlarmSystem.getInstance(this,creds.getHostname());
+        mRemoteAlarmSystem.logOnToSystem(creds.getHostname(), creds.getUsername(), creds.getPassword(),
+                new RemoteAlarmSystem.ResultListener() {
+            @Override
+            public void onResult(RemoteAlarmSystem.Result result) {
+                Toast.makeText(HomeActivity.this, result.message,Toast.LENGTH_SHORT).show();
+                if(result.success){
+                    mRemoteAlarmSystem.loadData(listener);
+                }else{
+                    Intent intent = new Intent(HomeActivity.this, LoginActivity.class);
+                    intent.putExtra(LoginActivity.UNABLE_TO_CONNECT_WITH_KNOWN_CREDS_KEY,true);
+                    startActivity(intent);
+                    finish();
+                }
+            }
+        });
+
 
 
     }
@@ -130,8 +154,7 @@ public class HomeActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
 
-        mGeneralListFragment = (GeneralListFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.ruleList);
+        mGeneralListFragment = (GeneralListFragment) getSupportFragmentManager().findFragmentById(R.id.ruleList);
 
         mBottomNavigation = (BottomNavigationView) findViewById(R.id.navigation);
         mBottomNavigation.setOnNavigationItemSelectedListener(
@@ -147,4 +170,6 @@ public class HomeActivity extends AppCompatActivity {
                 });
 
     }
+
+
 }

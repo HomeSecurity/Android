@@ -2,6 +2,8 @@ package com.hosec.homesecurity.model;
 
 import android.content.res.Resources;
 
+import org.json.JSONObject;
+
 import java.io.Serializable;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
@@ -18,6 +20,11 @@ public class Rule implements Serializable{
     private ArrayList<Device> mActors;
     private String mName;
     private boolean mActive;
+
+
+    public Rule(JSONObject json){
+
+    }
 
     public Rule(boolean active) {
         this(INVALID_ID,active, new ArrayList<Device>(),new ArrayList<Device>(),

@@ -1,7 +1,6 @@
 package com.hosec.homesecurity.activities;
 
 import android.content.Intent;
-import android.net.NetworkInfo;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -14,7 +13,7 @@ import android.widget.TextView;
 
 import com.hosec.homesecurity.R;
 import com.hosec.homesecurity.model.Device;
-import com.hosec.homesecurity.remote.RemoteAlarmSystem;
+import com.hosec.homesecurity.remote.TestRemoteAlarmSystem;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -69,7 +68,7 @@ public class DeviceDetailActivity extends AppCompatActivity {
                     Switch switchView = (Switch) findViewById(R.id.switchConnect);
                     mDevice.setState(switchView.isChecked() ? Device.State.CONNECTED : Device.State.DISCONNECTED);
                 }
-                RemoteAlarmSystem.updateDeviceInformation(mDevice);
+                TestRemoteAlarmSystem.updateDeviceInformation(mDevice);
                 finish();
 
                 return true;
