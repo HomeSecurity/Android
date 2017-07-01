@@ -136,7 +136,7 @@ public class HomeActivity extends AppCompatActivity {
             public void onResult(RemoteAlarmSystem.Result result) {
                 Toast.makeText(HomeActivity.this, result.message,Toast.LENGTH_SHORT).show();
                 if(result.success){
-                    mRemoteAlarmSystem.loadData(listener);
+                    //mRemoteAlarmSystem.loadData(listener);
                 }else{
                     Intent intent = new Intent(HomeActivity.this, LoginActivity.class);
                     intent.putExtra(LoginActivity.UNABLE_TO_CONNECT_WITH_KNOWN_CREDS_KEY,true);

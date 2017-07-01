@@ -198,12 +198,17 @@ public class RemoteAlarmSystem {
         } catch (JSONException e) {
             e.printStackTrace();
         }
-        JsonObjectRequest jsObjRequest = new JsonObjectRequest
+        resultListener.onResult(new Result(true,  mContext.getString(R.string.Successful_Login)));
+
+
+        /*JsonObjectRequest jsObjRequest = new JsonObjectRequest
             (Request.Method.GET, buildUrl("/login"), object, new Response.Listener<JSONObject>() {
                 @Override
                 public void onResponse(JSONObject response) {
                     try {
-                        resultListener.onResult(new Result(response.getBoolean("output"), mContext.getString(R.string.Successful_Login)));
+                        boolean success = response.getBoolean("output");
+                        resultListener.onResult(new Result(success, success ? mContext.getString(R.string.Successful_Login) :
+                                                                              mContext.getString(R.string.Failed_Login)));
                     } catch (JSONException e) {
                         resultListener.onResult(new Result(false, mContext.getString(R.string.invalid_json)));
                     }
@@ -214,7 +219,7 @@ public class RemoteAlarmSystem {
                     resultListener.onResult(new Result(false, error.getMessage()));
                 }
             });
-        mRequestQueue.add(jsObjRequest);
+        mRequestQueue.add(jsObjRequest);*/
 
 
     }
