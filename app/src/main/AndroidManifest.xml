@@ -2,10 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.hosec.homesecurity">
 
-    <!-- To auto-complete the email text field in the login form with the user's emails -->
-    <uses-permission android:name="android.permission.GET_ACCOUNTS" />
-    <uses-permission android:name="android.permission.READ_PROFILE" />
-    <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
         android:allowBackup="true"
@@ -15,17 +13,6 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
 
-        <!--
-        <activity
-            android:name=".DisplayMessageActivity"
-            android:label="@string/title_activity_display_message"
-            android:parentActivityName=".MainActivity"
-            android:theme="@style/AppTheme.NoActionBar">
-            <meta-data
-                android:name="android.support.PARENT_ACTIVITY"
-                android:value=".MainActivity" />
-        </activity>
-        -->
         <activity
             android:name=".activities.HomeActivity"
             android:label="@string/title_activity_home"
@@ -33,10 +20,10 @@
             android:theme="@style/AppTheme.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
         <activity
             android:name=".activities.DeviceDetailActivity"
             android:label="@string/device_details"
@@ -47,6 +34,7 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value=".activities.HomeActivity" />
         </activity>
+
         <activity
             android:name=".activities.RuleDetailActivity"
             android:label="Rule Details"
@@ -57,8 +45,42 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value=".activities.HomeActivity" />
         </activity>
-        <activity android:name=".activities.SettingsActivity" />
-        <activity android:name=".activities.LoginActivity" android:theme="@style/AppTheme.NoActionBar"/>
-    </application>
 
+        <activity android:name=".activities.SettingsActivity" />
+
+        <activity
+            android:name=".activities.LoginActivity"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:windowSoftInputMode="stateHidden" />
+
+        <activity
+            android:name=".activities.NotificationDetailActivity"
+            android:label="Notification Details"
+            android:parentActivityName=".activities.HomeActivity"
+            android:theme="@style/AppTheme.NoActionBar">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".activities.HomeActivity" />
+        </activity>
+
+        <service android:name=".messaging.MyFirebaseMessagingService">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+        <service android:name=".messaging.MyFirebaseInstanceIDService">
+            <intent-filter>
+                <action android:name="com.google.firebase.INSTANCE_ID_EVENT" />
+            </intent-filter>
+        </service>
+
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_device_black_24dp" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/colorAccent" />
+
+    </application>
 </manifest>

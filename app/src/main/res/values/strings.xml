@@ -30,6 +30,12 @@
     <string name="hostname_or_ip_address">Enter hostname or IP address</string>
     <string name="username">Username</string>
     <string name="password">Password</string>
+    <string name="Successful_Login">Successfully logged in</string>
+    <string name="invalid_json">Invalid JSON</string>
+    <string name="Failed_Login">Failed to log in</string>
+    <string name="success">Success</string>
+    <string name="HOME_SECURITY_LOG">HomeSecurityLog</string>
+    <string name="Token_Fail">Failed to transmit the new token to the remote system. This may affect your real-time notification experience.</string>
 
 
 </resources>

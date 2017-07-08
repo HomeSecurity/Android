@@ -13,7 +13,7 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 import com.hosec.homesecurity.R;
-import com.hosec.homesecurity.remote.RemoteAlarmSystem;
+import com.hosec.homesecurity.remote.TestRemoteAlarmSystem;
 
 /**
  * Created by D062572 on 10.06.2017.
@@ -79,7 +79,7 @@ public class ChangeUsernameDialog extends DialogPreference {
     protected void onDialogClosed(boolean positiveResult) {
         // When the user selects "OK", persist the new value
         if (positiveResult) {
-            RemoteAlarmSystem.changeUsername(mUsername);
+            TestRemoteAlarmSystem.changeUsername(mUsername);
             persistString(mUsername);
         }
     }
