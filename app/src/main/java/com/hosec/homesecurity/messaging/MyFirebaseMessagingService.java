@@ -25,6 +25,7 @@ import com.hosec.homesecurity.activities.HomeActivity;
 public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
     public static final String TAG ="grallee";
+    private int mNotificationIdCounter = 0;
 
     @Override
     public void onMessageReceived(RemoteMessage remoteMessage) {
@@ -38,7 +39,6 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         // messages. For more see: https://firebase.google.com/docs/cloud-messaging/concept-options
         // [END_EXCLUDE]
 
-        sendNotification(remoteMessage.getNotification().getBody());
         // TODO(developer): Handle FCM messages here.
         // Not getting messages here? See why this may be: https://goo.gl/39bRNJ
         Log.d(TAG, "From: " + remoteMessage.getFrom());
@@ -47,7 +47,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         if (remoteMessage.getData().size() > 0) {
             Log.d(TAG, "Message data payload: " + remoteMessage.getData());
 
-            handleNow();
+            sendNotification(remoteMessage.getData().get("message"));
 
 
         }
@@ -55,6 +55,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         // Check if message contains a notification payload.
         if (remoteMessage.getNotification() != null) {
             Log.d(TAG, "Message Notification Body: " + remoteMessage.getNotification().getBody());
+            sendNotification(remoteMessage.getNotification().getBody());
         }
 
         // Also if you intend on generating your own notifications as a result of a received FCM
@@ -79,6 +80,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     private void sendNotification(String messageBody) {
         Intent intent = new Intent(this, HomeActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        intent.putExtra(HomeActivity.NOTIFICATION_KEY,true);
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0 /* Request code */, intent,
                 PendingIntent.FLAG_ONE_SHOT);
 
@@ -97,6 +99,13 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         NotificationManager notificationManager =
                 (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
-        notificationManager.notify(0 /* ID of notification */, notificationBuilder.build());
+
+        notificationManager.notify(mNotificationIdCounter, notificationBuilder.build());
+
+        if(mNotificationIdCounter+1L > Integer.MAX_VALUE){
+            mNotificationIdCounter = 0;
+        }else{
+            ++mNotificationIdCounter;
+        }
     }
 }

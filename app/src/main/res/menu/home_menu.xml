@@ -2,6 +2,19 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
+
+    <item
+        android:id="@+id/turn_alarm_off"
+        android:icon="@drawable/ic_access_alarm_black_24dp"
+        android:orderInCategory="100"
+        android:title="@string/add"
+        app:showAsAction="always"/>
+    <item
+        android:id="@+id/registration_mode"
+        android:icon="@drawable/ic_router_black_24dp"
+        android:orderInCategory="100"
+        android:title="@string/add"
+        app:showAsAction="always"/>
     <item
         android:id="@+id/action_add"
         android:icon="@drawable/ic_add_black_24dp"

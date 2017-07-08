@@ -21,6 +21,8 @@ import com.hosec.homesecurity.model.DetailDeviceItemInfo;
 import com.hosec.homesecurity.model.Device;
 import com.hosec.homesecurity.model.ListItemInformation;
 import com.hosec.homesecurity.model.Rule;
+import com.hosec.homesecurity.remote.NetworkFragment;
+import com.hosec.homesecurity.remote.RemoteAlarmSystem;
 import com.hosec.homesecurity.remote.TestRemoteAlarmSystem;
 
 import java.net.URL;
@@ -169,6 +171,14 @@ public class RuleDetailActivity extends AppCompatActivity
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.detail_menu, menu);
+
+        final RemoteAlarmSystem.ResultListener listener = new RemoteAlarmSystem.ResultListener(){
+            @Override
+            public void onResult(RemoteAlarmSystem.Result result) {
+                finish();
+            }
+        };
+
         menu.findItem(R.id.action_save).setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
             @Override
             public boolean onMenuItemClick(MenuItem item) {
@@ -181,12 +191,13 @@ public class RuleDetailActivity extends AppCompatActivity
 
                 mRule.setActors(newActors);
                 mRule.setSensors(newSensors);
+
                 if (isNewRule) {
-                    TestRemoteAlarmSystem.addNewRule(mRule);
+                    RemoteAlarmSystem.getInstance(RuleDetailActivity.this).addRule(mRule, listener);
                 } else {
-                    TestRemoteAlarmSystem.updateRuleInformation(mRule);
+                    RemoteAlarmSystem.getInstance(RuleDetailActivity.this).updateRule(mRule, listener);
                 }
-                finish();
+
                 return true;
             }
         });
@@ -207,7 +218,4 @@ public class RuleDetailActivity extends AppCompatActivity
 
     }
 
-    public void testConnection(URL url){
-
-    }
 }

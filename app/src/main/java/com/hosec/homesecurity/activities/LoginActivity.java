@@ -60,7 +60,7 @@ public class LoginActivity extends AppCompatActivity implements RemoteAlarmSyste
                 mUser = username.getText().toString();
                 mHost = hostname.getText().toString();
 
-                mRemoteAlarmSystem = RemoteAlarmSystem.getInstance(LoginActivity.this,mHost);
+                mRemoteAlarmSystem = RemoteAlarmSystem.getInstance(LoginActivity.this);
                 mRemoteAlarmSystem.logOnToSystem(mHost,mUser,mPwd, LoginActivity.this);
             }
         });

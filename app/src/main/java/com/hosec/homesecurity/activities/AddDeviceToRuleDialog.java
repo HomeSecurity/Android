@@ -9,6 +9,7 @@ import android.support.v7.app.AppCompatDialogFragment;
 
 import com.hosec.homesecurity.R;
 import com.hosec.homesecurity.model.Device;
+import com.hosec.homesecurity.remote.RemoteAlarmSystem;
 import com.hosec.homesecurity.remote.TestRemoteAlarmSystem;
 
 import java.util.ArrayList;
@@ -97,7 +98,7 @@ public class AddDeviceToRuleDialog extends AppCompatDialogFragment {
 
 
     private List<Device> getDevicesToBeSelected(){
-        List<Device> allDevices = TestRemoteAlarmSystem.getAllDevices();
+        List<Device> allDevices = RemoteAlarmSystem.getInstance(getContext()).getDeviceList();
         List<Device> toBeSelected = new ArrayList<>();
 
         Iterator<Device> iterAll = allDevices.iterator();

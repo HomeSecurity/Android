@@ -14,6 +14,7 @@ import java.net.URL;
 
 public class Device implements Serializable {
 
+
     public enum State {
         OFFLINE,
         DISCONNECTED,
@@ -40,13 +41,17 @@ public class Device implements Serializable {
 
     public Device(JSONObject json) throws JSONException, MalformedURLException {
         this(json.getLong("id"),
-                json.getString("name"),
+                json.getString("name"),"No description", State.CONNECTED,
+                json.getBoolean("sensor") ? Type.SENSOR : Type.ACTOR, InterfaceType.UART, null);
+
+
+                /*
                 json.getString("description"),
                 State.valueOf(json.getString("state")),
                 Type.valueOf(json.getString("type")),
                 InterfaceType.valueOf(json.getString("interface")),
                 InterfaceType.valueOf(json.getString("interface")) != InterfaceType.IP ?
-                        null : new URL(json.getString("url")));
+                        null : new URL(json.getString("url")));*/
     }
 
     public Device(long mID, String mName, String mDescription, State mState, Type mType,
@@ -105,5 +110,12 @@ public class Device implements Serializable {
         this.mUrl = url;
     }
 
+    public JSONObject toJSON() throws JSONException {
 
+        JSONObject obj = new JSONObject();
+        obj.put("id",mID);
+        obj.put("name",mName);
+        return obj;
+
+    }
 }

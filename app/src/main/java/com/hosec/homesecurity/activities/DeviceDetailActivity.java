@@ -13,6 +13,7 @@ import android.widget.TextView;
 
 import com.hosec.homesecurity.R;
 import com.hosec.homesecurity.model.Device;
+import com.hosec.homesecurity.remote.RemoteAlarmSystem;
 import com.hosec.homesecurity.remote.TestRemoteAlarmSystem;
 
 import java.net.MalformedURLException;
@@ -68,8 +69,14 @@ public class DeviceDetailActivity extends AppCompatActivity {
                     Switch switchView = (Switch) findViewById(R.id.switchConnect);
                     mDevice.setState(switchView.isChecked() ? Device.State.CONNECTED : Device.State.DISCONNECTED);
                 }
-                TestRemoteAlarmSystem.updateDeviceInformation(mDevice);
-                finish();
+
+                RemoteAlarmSystem.getInstance(DeviceDetailActivity.this).updateDevice(mDevice,
+                        new RemoteAlarmSystem.ResultListener() {
+                    @Override
+                    public void onResult(RemoteAlarmSystem.Result result) {
+                        finish();
+                    }
+                });
 
                 return true;
             }
