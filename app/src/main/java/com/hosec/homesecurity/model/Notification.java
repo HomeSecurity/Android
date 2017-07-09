@@ -28,7 +28,8 @@ public class Notification implements Serializable{
         this.mIsTriggered =  object.getBoolean("triggered");
         this.mRule = ruleMap.get(object.getLong("ruleid"));
         String image = object.getString("image");
-        mBitmap = image != null ? null : null;
+        mBitmap = image != null ? BitmapFactory.decodeByteArray(image.getBytes(),0,image.getBytes().length)
+                                : null;
     }
 
     public Date getDate() {

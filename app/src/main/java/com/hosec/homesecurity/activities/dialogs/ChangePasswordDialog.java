@@ -1,4 +1,4 @@
-package com.hosec.homesecurity.activities;
+package com.hosec.homesecurity.activities.dialogs;
 
 import android.app.AlertDialog;
 import android.content.Context;
@@ -12,18 +12,17 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.hosec.homesecurity.R;
-import com.hosec.homesecurity.remote.TestRemoteAlarmSystem;
+import com.hosec.homesecurity.model.Credentials;
+import com.hosec.homesecurity.remote.RemoteAlarmSystem;
 
 /**
- * Created by D062572 on 08.06.2017.
+ * Simple Password Change Dialog
  */
-
 public class ChangePasswordDialog extends DialogPreference {
 
-    public static final String DEFAULT_VALUE = "";
-    public static final String KEY = "pref_key_pwd";
     private Button mPositiveButton;
     private String mPassword;
 
@@ -92,7 +91,7 @@ public class ChangePasswordDialog extends DialogPreference {
     @Override
     protected void onSetInitialValue(boolean restorePersistedValue, Object defaultValue) {
         if (restorePersistedValue) {
-            mPassword = this.getPersistedString(DEFAULT_VALUE);
+            mPassword = this.getPersistedString(Credentials.DEFAULT_VALUE);
         } else {
             // Set default state from the XML attribute
             mPassword = (String) defaultValue;
@@ -104,83 +103,27 @@ public class ChangePasswordDialog extends DialogPreference {
     protected void onDialogClosed(boolean positiveResult) {
         // When the user selects "OK", persist the new value
         if (positiveResult) {
-            TestRemoteAlarmSystem.changePassword(mPassword);
+
+            final Context context = this.getContext();
+            Credentials creds = Credentials.getStoredCredentials(context);
+            creds.setPassword(mPassword);
+
+            RemoteAlarmSystem.getInstance(context).updateCredentials(creds, new RemoteAlarmSystem.ResultListener() {
+                @Override
+                public void onResult(RemoteAlarmSystem.Result result) {
+                    String message;
+                    if(result.success){
+                        message = context.getString(R.string.updated_password);
+                    }else{
+                        message = result.message;
+                    }
+
+                    Toast.makeText(context,message,Toast.LENGTH_SHORT).show();
+                }
+            });
+
             persistString(mPassword);
         }
     }
-
-//    //COPIED FROM GOOGLE
-//    private static class SavedState extends BaseSavedState {
-//        // Member that holds the setting's value
-//        // Change this data type to match the type saved by your Preference
-//        String value;
-//
-//        public SavedState(Parcelable superState) {
-//            super(superState);
-//        }
-//
-//        public SavedState(Parcel source) {
-//            super(source);
-//            // Get the current preference's value
-//            value = source.readString();  // Change this to read the appropriate data type
-//        }
-//
-//        @Override
-//        public void writeToParcel(Parcel dest, int flags) {
-//            super.writeToParcel(dest, flags);
-//            // Write the preference's value
-//            dest.writeString(value);  // Change this to write the appropriate data type
-//        }
-//
-//        // Standard creator object using an instance of this class
-//        public static final Parcelable.Creator<SavedState> CREATOR =
-//                new Parcelable.Creator<SavedState>() {
-//
-//                    public SavedState createFromParcel(Parcel in) {
-//                        return new SavedState(in);
-//                    }
-//
-//                    public SavedState[] newArray(int size) {
-//                        return new SavedState[size];
-//                    }
-//                };
-//    }
-//
-//    @Override
-//    protected Parcelable onSaveInstanceState() {
-//        final Parcelable superState = super.onSaveInstanceState();
-//        // Check whether this Preference is persistent (continually saved)
-//        if (isPersistent()) {
-//            // No need to save instance state since it's persistent,
-//            // use superclass state
-//            return superState;
-//        }
-//
-//        // Create instance of custom BaseSavedState
-//        final SavedState myState = new SavedState(superState);
-//        // Set the state's value with the class member that holds current
-//        // setting value
-//        myState.value = mNewValue;
-//        return myState;
-//    }
-//
-//    @Override
-//    protected void onRestoreInstanceState(Parcelable state) {
-//        // Check whether we saved the state in onSaveInstanceState
-//        if (state == null || !state.getClass().equals(SavedState.class)) {
-//            // Didn't save the state, so call superclass
-//            super.onRestoreInstanceState(state);
-//            return;
-//        }
-//
-//        // Cast state to custom BaseSavedState and pass to superclass
-//        SavedState myState = (SavedState) state;
-//        super.onRestoreInstanceState(myState.getSuperState());
-//
-//        // Set this Preference's widget to reflect the restored state
-//        mNumberPicker.setValue(myState.value);
-//    }
-//
-//    Newsletter Blog Support
 
 }

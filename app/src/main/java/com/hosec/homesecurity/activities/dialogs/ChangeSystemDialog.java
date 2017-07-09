@@ -1,4 +1,4 @@
-package com.hosec.homesecurity.activities;
+package com.hosec.homesecurity.activities.dialogs;
 
 import android.app.AlertDialog;
 import android.content.Context;
@@ -11,15 +11,13 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import com.hosec.homesecurity.R;
+import com.hosec.homesecurity.model.Credentials;
 
 /**
- * Created by D062572 on 10.06.2017.
+ * Dialog which lets the user change her alarm system
  */
-
 public class ChangeSystemDialog extends DialogPreference {
 
-    public  static final String DEFAULT_VALUE = "";
-    public static final String SYSTEM_PREF_KEY = "pref_key_system_host";
     private String mHost;
 
     public ChangeSystemDialog(Context context, AttributeSet attrs) {
@@ -49,7 +47,7 @@ public class ChangeSystemDialog extends DialogPreference {
     @Override
     protected void onSetInitialValue(boolean restorePersistedValue, Object defaultValue) {
         if (restorePersistedValue) {
-            mHost = this.getPersistedString(DEFAULT_VALUE);
+            mHost = this.getPersistedString(Credentials.DEFAULT_VALUE);
         }
     }
 
@@ -57,7 +55,7 @@ public class ChangeSystemDialog extends DialogPreference {
     protected void onDialogClosed(boolean positiveResult) {
         // When the user selects "OK", persist the new value
         if (positiveResult) {
-            persistString(DEFAULT_VALUE);
+            persistString(Credentials.DEFAULT_VALUE);
         }
     }
 }

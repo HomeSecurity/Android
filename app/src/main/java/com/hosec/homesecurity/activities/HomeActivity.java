@@ -4,16 +4,13 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.design.widget.BottomNavigationView;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
 
 import com.hosec.homesecurity.R;
-import com.hosec.homesecurity.messaging.MyFirebaseInstanceIDService;
-import com.hosec.homesecurity.model.Credentials;
+import com.hosec.homesecurity.messaging.FCMToken;
 import com.hosec.homesecurity.model.DeviceItemInformation;
 import com.hosec.homesecurity.model.ListItemInformation;
 import com.hosec.homesecurity.model.Notification;
@@ -21,28 +18,34 @@ import com.hosec.homesecurity.model.NotificationItemInformation;
 import com.hosec.homesecurity.model.Rule;
 import com.hosec.homesecurity.model.RuleItemInformation;
 import com.hosec.homesecurity.remote.RemoteAlarmSystem;
-import com.hosec.homesecurity.remote.TestRemoteAlarmSystem;
 
 import java.util.ArrayList;
 import java.util.List;
 
 
-public class HomeActivity extends AppCompatActivity {
+public class HomeActivity extends RemoteAPIActivity {
 
     public static final int REQUEST_CODE_DETAIL = 1;
-    public static final String NOTIFICATION_KEY = "IS_NOTIFICATION";
+    public static final String NOTIFICATION_KEY = "IS_NOTIFICATION"; //to handle push-notifications
     private MenuItem mAddButton;
     private MenuItem mRegistrationButton;
     private MenuItem mTurnAlarmOff;
     private GeneralListFragment mGeneralListFragment;
     private BottomNavigationView mBottomNavigation;
-    private RemoteAlarmSystem mRemoteAlarmSystem;
     private boolean mAlarmOn;
-    private boolean mLoggedIn;
+
+    //for asynchronous refreshes while running the registration mode
+    private Handler mHandler;
+    private Runnable mCallback;
 
 
+    /**
+     * listeners which are called when a toolbar menu gets clicked
+     */
 
-
+    /**
+     * called if the add button is pressed while displaying rule information
+     */
     private MenuItem.OnMenuItemClickListener mAddRuleListener = new MenuItem.OnMenuItemClickListener() {
         @Override
         public boolean onMenuItemClick(MenuItem item) {
@@ -54,6 +57,10 @@ public class HomeActivity extends AppCompatActivity {
         }
     };
 
+    /**
+     * called if the add button is pressed while displaying device information
+     * TODO: needs to be implemented ;)
+     */
     private MenuItem.OnMenuItemClickListener mAddDeviceListener = new MenuItem.OnMenuItemClickListener() {
         @Override
         public boolean onMenuItemClick(MenuItem item) {
@@ -61,6 +68,9 @@ public class HomeActivity extends AppCompatActivity {
         }
     };
 
+    /**
+     * called if the settings button is pressed
+     */
     private MenuItem.OnMenuItemClickListener mSettingsListener = new MenuItem.OnMenuItemClickListener() {
         @Override
         public boolean onMenuItemClick(MenuItem item) {
@@ -72,18 +82,27 @@ public class HomeActivity extends AppCompatActivity {
     };
 
 
+    /**
+     * Prepares the contents of the list view depending on the selected navigation menu option
+     * either device or rule or notification data will be displayed.
+     * In addition the menu buttons in the toolbar change because there are different options
+     * for each type of content
+     */
     private boolean prepareContent(MenuItem item) {
+
+        boolean returnValue = false;
 
         switch (item.getItemId()) {
             case R.id.navigation_devices:
 
                 mGeneralListFragment.setData(DeviceItemInformation
                         .createDeviceItemInformation(mRemoteAlarmSystem.getDeviceList()));
-                mAddButton.setVisible(true);
+                mAddButton.setVisible(false); //TODO: set visibility to true after camera handling was generalized
                 mRegistrationButton.setVisible(true);
                 mTurnAlarmOff.setVisible(false);
                 mAddButton.setOnMenuItemClickListener(mAddDeviceListener);
-                return true;
+                returnValue = true;
+                break;
 
             case R.id.navigation_rules:
                 mGeneralListFragment.setData(RuleItemInformation
@@ -92,7 +111,8 @@ public class HomeActivity extends AppCompatActivity {
                 mRegistrationButton.setVisible(false);
                 mTurnAlarmOff.setVisible(false);
                 mAddButton.setOnMenuItemClickListener(mAddRuleListener);
-                return true;
+                returnValue = true;
+                break;
 
             case R.id.navigation_notifications: {
 
@@ -100,7 +120,7 @@ public class HomeActivity extends AppCompatActivity {
                 mGeneralListFragment.setData(NotificationItemInformation
                         .createNotificationItemInformation(notifications));
 
-                if (!notifications.isEmpty() && notifications.get(0).isTriggered()) {
+                if (isOneNotificationTriggered(notifications)) {
                     mAlarmOn = true;
                 }
 
@@ -109,20 +129,22 @@ public class HomeActivity extends AppCompatActivity {
                 }
                 mRegistrationButton.setVisible(false);
                 mAddButton.setVisible(false);
-                return true;
+                returnValue = true;
             }
+
+            break;
         }
-        return false;
+        return returnValue;
     }
 
-
-
+    /**
+     * if previous activity was a *-DetailActivity call prepareContent for the respective navigation menu, e.g.
+     * if RuleDetailActivity is destroyed and HomeActivity comes into foreground then show the rule list
+     */
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         prepareContent(mBottomNavigation.getMenu().findItem(mBottomNavigation.getSelectedItemId()));
     }
-
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -131,40 +153,20 @@ public class HomeActivity extends AppCompatActivity {
         Toolbar toolBar = (Toolbar) findViewById(R.id.home_toolbar);
         setSupportActionBar(toolBar);
 
-        Credentials creds = Credentials.getStoredCredentials(this);
-
         mAlarmOn = false;
-        mLoggedIn = false;
-
-        mRemoteAlarmSystem = RemoteAlarmSystem.getInstance(this);
-        mRemoteAlarmSystem.logOnToSystem(creds.getHostname(), creds.getUsername(), creds.getPassword(),
-                new RemoteAlarmSystem.ResultListener() {
-                    @Override
-                    public void onResult(RemoteAlarmSystem.Result result) {
-                        Toast.makeText(HomeActivity.this, result.message,Toast.LENGTH_SHORT).show();
-                        if(result.success){
-                            mLoggedIn = true;
-                            if(MyFirebaseInstanceIDService.msToken != null){
-                                RemoteAlarmSystem.getInstance(HomeActivity.this)
-                                        .setMessagingToken(MyFirebaseInstanceIDService.msToken);
-                                MyFirebaseInstanceIDService.msToken = null;
-                            }
-
-                            loadData();
-                        }else{
-                            Intent intent = new Intent(HomeActivity.this, LoginActivity.class);
-                            intent.putExtra(LoginActivity.UNABLE_TO_CONNECT_WITH_KNOWN_CREDS_KEY,true);
-                            startActivity(intent);
-                            finish();
-                        }
-                    }
-                });
 
         mGeneralListFragment = (GeneralListFragment) getSupportFragmentManager().findFragmentById(R.id.ruleList);
 
         mBottomNavigation = (BottomNavigationView) findViewById(R.id.navigation);
+        mBottomNavigation.setOnNavigationItemSelectedListener(
+                new BottomNavigationView.OnNavigationItemSelectedListener() {
+                    @Override
+                    public boolean onNavigationItemSelected(MenuItem item) {
+                        return prepareContent(item);
+                    }
+                });
 
-        if(getIntent().getBooleanExtra(NOTIFICATION_KEY,false)){
+        if (getIntent().getBooleanExtra(NOTIFICATION_KEY, false)) {
             mBottomNavigation.setSelectedItemId(R.id.navigation_notifications);
             mAlarmOn = true;
         }
@@ -174,29 +176,11 @@ public class HomeActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-
-        if(mLoggedIn){
-            loadData();
-        }
-
-        mBottomNavigation.setOnNavigationItemSelectedListener(
-                new BottomNavigationView.OnNavigationItemSelectedListener() {
-
-                    @Override
-                    public boolean onNavigationItemSelected(MenuItem item) {
-
-                        return prepareContent(item);
-
-                    }
-
-                });
-
-
+        loadData();
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.home_menu, menu);
         MenuItem settings = ((Toolbar) findViewById(R.id.home_toolbar)).getMenu().findItem(R.id.action_settings);
         settings.setOnMenuItemClickListener(mSettingsListener);
@@ -219,12 +203,12 @@ public class HomeActivity extends AppCompatActivity {
                 mRemoteAlarmSystem.resetAlarm(new RemoteAlarmSystem.ResultListener() {
                     @Override
                     public void onResult(RemoteAlarmSystem.Result result) {
-                        if(result.success) {
+                        if (result.success) {
                             mTurnAlarmOff.setVisible(false);
                             mAlarmOn = false;
                             loadData();
                         }
-                        Toast.makeText(HomeActivity.this, result.message,Toast.LENGTH_SHORT).show();
+                        Toast.makeText(HomeActivity.this, result.message, Toast.LENGTH_SHORT).show();
                     }
                 });
                 return true;
@@ -236,14 +220,28 @@ public class HomeActivity extends AppCompatActivity {
         return true;
     }
 
-    private void loadData(){
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (mHandler != null) {
+            mHandler.removeCallbacks(mCallback);//stop running tasks which were started upon running the registration mode
+            mHandler = null;
+        }
+    }
+    //END OF LIFECYCLE METHODS
+
+
+    /**
+     *
+     */
+    private void loadData() {
         final RemoteAlarmSystem.ResultListener listener = new RemoteAlarmSystem.ResultListener() {
             @Override
             public void onResult(RemoteAlarmSystem.Result result) {
-                if(result.success){
+                if (result.success) {
                     prepareContent(mBottomNavigation.getMenu().findItem(mBottomNavigation.getSelectedItemId()));
-                }else{
-                    Toast.makeText(HomeActivity.this, result.message,Toast.LENGTH_SHORT).show();
+                } else {
+                    //Toast.makeText(HomeActivity.this, result.message, Toast.LENGTH_SHORT).show();
                 }
             }
         };
@@ -252,25 +250,36 @@ public class HomeActivity extends AppCompatActivity {
 
     }
 
-    private void registerNewDevices(){
+    private void registerNewDevices() {
         mRemoteAlarmSystem.startRegistrationMode();
         Toast.makeText(HomeActivity.this, "Wait for registration mode to finish ...", Toast.LENGTH_SHORT).show();
-        final Handler handler = new Handler();
-        Runnable r = new Runnable(){
+        mHandler = new Handler();
+        mCallback = new Runnable() {
             @Override
-            public void run(){
+            public void run() {
                 loadData();
             }
         };
 
-        for(int i = 1; i <= 6; ++i){
-            handler.postDelayed(r, 5000*i);
+        for (int i = 1; i <= 6; ++i) {
+            mHandler.postDelayed(mCallback, 5000 * i); //refresh every 5 seconds
+            // TODO: let this only affect the list contents if the device menu is actually selected
         }
-
 
     }
 
+    private boolean isOneNotificationTriggered(List<Notification> notifications) {
 
+        boolean isTriggered = false;
+        for (Notification notification : notifications) {
+            if (notification.isTriggered()) {
+                isTriggered = true;
+                break;
+            }
+        }
+        return isTriggered;
+
+    }
 
 
 }

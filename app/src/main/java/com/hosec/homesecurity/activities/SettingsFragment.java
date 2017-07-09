@@ -7,15 +7,13 @@ import android.os.Bundle;
 import android.preference.PreferenceFragment;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
-import android.support.v7.widget.ShareActionProvider;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
 
 import com.hosec.homesecurity.R;
+import com.hosec.homesecurity.activities.dialogs.ChangeSystemDialog;
+import com.hosec.homesecurity.model.Credentials;
 
 /**
- * A simple {@link Fragment} subclass.
+ * Settings fragment containing all preferences
  */
 public class SettingsFragment extends PreferenceFragment
         implements SharedPreferences.OnSharedPreferenceChangeListener {
@@ -49,9 +47,9 @@ public class SettingsFragment extends PreferenceFragment
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-        String defaultValue = ChangeSystemDialog.DEFAULT_VALUE;
+        String defaultValue = Credentials.DEFAULT_VALUE;
 
-        if(key.equals(ChangeSystemDialog.SYSTEM_PREF_KEY) &&
+        if(key.equals(Credentials.SYSTEM_PREF_KEY) &&
                 sharedPreferences.getString(key,defaultValue).equals(defaultValue)){
             Intent intent = new Intent(this.getActivity(),LoginActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK|Intent.FLAG_ACTIVITY_NEW_TASK);

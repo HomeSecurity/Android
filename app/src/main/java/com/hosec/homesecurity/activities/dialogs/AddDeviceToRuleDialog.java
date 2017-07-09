@@ -1,4 +1,4 @@
-package com.hosec.homesecurity.activities;
+package com.hosec.homesecurity.activities.dialogs;
 
 import android.app.Dialog;
 import android.content.Context;
@@ -10,7 +10,6 @@ import android.support.v7.app.AppCompatDialogFragment;
 import com.hosec.homesecurity.R;
 import com.hosec.homesecurity.model.Device;
 import com.hosec.homesecurity.remote.RemoteAlarmSystem;
-import com.hosec.homesecurity.remote.TestRemoteAlarmSystem;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -18,9 +17,8 @@ import java.util.List;
 
 
 /**
- * Created by D062572 on 08.06.2017.
+ * Called from RuleDetailActivity to select devices that should be added to a rule
  */
-
 public class AddDeviceToRuleDialog extends AppCompatDialogFragment {
 
     public interface AddDeviceDialogListener {
@@ -60,6 +58,7 @@ public class AddDeviceToRuleDialog extends AppCompatDialogFragment {
         final List<Device> devicesToBeSelected = getDevicesToBeSelected();
         final boolean[] selectionMask = new boolean[devicesToBeSelected.size()];
 
+        //build dialog UI
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         builder.setTitle(mIsSensor ? R.string.add_sensor : R.string.add_actor);
         builder.setMultiChoiceItems(getNameListOfDevices(devicesToBeSelected), null,
@@ -71,9 +70,9 @@ public class AddDeviceToRuleDialog extends AppCompatDialogFragment {
                     }
                 });
 
+        //add all devices to rule if the positive button was clicked
         builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int id) {
-
                 for(int i = 0; i < selectionMask.length; ++i){
                     if(selectionMask[i]){
                         mNewSelections.add(devicesToBeSelected.get(i));
@@ -97,6 +96,7 @@ public class AddDeviceToRuleDialog extends AppCompatDialogFragment {
     }
 
 
+    //get all devices that are in the device list but which have not been selected
     private List<Device> getDevicesToBeSelected(){
         List<Device> allDevices = RemoteAlarmSystem.getInstance(getContext()).getDeviceList();
         List<Device> toBeSelected = new ArrayList<>();

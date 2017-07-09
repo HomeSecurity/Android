@@ -1,11 +1,7 @@
 package com.hosec.homesecurity.activities;
 
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.net.NetworkInfo;
-import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 import android.view.animation.AnimationUtils;
@@ -14,81 +10,97 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import com.hosec.homesecurity.R;
+import com.hosec.homesecurity.messaging.FCMToken;
 import com.hosec.homesecurity.model.Credentials;
-import com.hosec.homesecurity.remote.NetworkFragment;
 import com.hosec.homesecurity.remote.RemoteAlarmSystem;
-import com.hosec.homesecurity.remote.RequestCallback;
-
-import org.json.JSONException;
-import org.json.JSONObject;
+import com.hosec.homesecurity.remote.RemoteAlarmSystem.ResultListener;
 
 /**
- * A login screen that offers login via email/password.
+ * A login screen that offers login to alarm system by entering the IP or hostname of the system
+ * and username and password. There is only one pre-configured user for each alarm system so far
+ * which has username DefaultUser and password DefaultPassword. Multiple users are not supported by
+ * current implementations of HomeSecurity's alarm system.
+ * <p>
+ * The login credentials will be remembered and used for subsequent logins. Currently, all credentials
+ * are stored in a private shared preference storage which is not the recommended way to store authentication
+ * information. TODO: implement token auth strategy
  */
-public class LoginActivity extends AppCompatActivity implements RemoteAlarmSystem.ResultListener{
+public class LoginActivity extends RemoteAPIActivity {
 
-    private RemoteAlarmSystem mRemoteAlarmSystem;
     private String mPwd;
     private String mUser;
     private String mHost;
-    public static final String UNABLE_TO_CONNECT_WITH_KNOWN_CREDS_KEY = "UNABLE_TO_CONNECT_WITH_KNOWN_CREDS_KEY";
+    private Button mSubmit;
+
+    private ResultListener mTokenListener = new ResultListener() {
+        @Override
+        public void onResult(RemoteAlarmSystem.Result result) {
+            //start home activity
+            Intent intent = new Intent(LoginActivity.this, HomeActivity.class);
+            LoginActivity.this.startActivity(intent);
+            LoginActivity.this.finish();
+        }
+    };
+
+    //ResultListener for authentication requests sent to the alarm system
+    private ResultListener mLoginListener = new ResultListener() {
+        @Override
+        public void onResult(RemoteAlarmSystem.Result result) {
+            Toast.makeText(LoginActivity.this, result.message, Toast.LENGTH_SHORT).show();
+            if (result.success) {
+                //save valid credentials
+                Credentials creds = new Credentials(mUser, mPwd, mHost);
+                Credentials.setStoredCredentials(LoginActivity.this, creds);
+
+                //update cloud messaging token
+                String token = FCMToken.getStoredToken(LoginActivity.this);
+                mRemoteAlarmSystem.setMessagingToken(token, mTokenListener);
+
+            } else {
+                EditText password = (EditText) findViewById(R.id.etPassword);
+                Button button = (Button) findViewById(R.id.btSignIn);
+                password.setText("");
+                button.startAnimation(AnimationUtils.loadAnimation(LoginActivity.this, R.anim.shake_on_wrong_input));
+            }
+
+            mSubmit.setEnabled(true);
+        }
+    };
+
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
-        Intent intent = getIntent();
-        boolean unableToConnect = intent.getBooleanExtra(UNABLE_TO_CONNECT_WITH_KNOWN_CREDS_KEY, false);
-
         final EditText hostname = (EditText) findViewById(R.id.etSystemHostname);
         final EditText username = (EditText) findViewById(R.id.etUsername);
         final EditText password = (EditText) findViewById(R.id.etPassword);
 
-        if(unableToConnect){
-            Credentials creds = Credentials.getStoredCredentials(this);
-            hostname.setText(creds.getHostname());
-            password.setText(creds.getPassword());
-            username.setText(creds.getUsername());
-        }
+        Credentials creds = Credentials.getStoredCredentials(this);
+        hostname.setText(creds.getHostname());
+        password.setText(creds.getPassword());
+        username.setText(creds.getUsername());
 
-        final Button button  = (Button) findViewById(R.id.btSignIn);
-        button.setOnClickListener(new View.OnClickListener() {
+
+        mSubmit = (Button) findViewById(R.id.btSignIn);
+        mSubmit.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 mPwd = password.getText().toString();
                 mUser = username.getText().toString();
                 mHost = hostname.getText().toString();
-
-                mRemoteAlarmSystem = RemoteAlarmSystem.getInstance(LoginActivity.this);
-                mRemoteAlarmSystem.logOnToSystem(mHost,mUser,mPwd, LoginActivity.this);
+                mSubmit.setEnabled(false); //prevent simultaneous requests
+                mRemoteAlarmSystem.logOnToSystem(mHost, mUser, mPwd, mLoginListener);
             }
         });
 
     }
 
-
     @Override
-    public void onResult(RemoteAlarmSystem.Result result) {
-        if(result.success) {
-
-            SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(LoginActivity.this).edit();
-            editor.putString(ChangeSystemDialog.SYSTEM_PREF_KEY, mHost);
-            editor.putString(ChangeUsernameDialog.KEY, mUser);
-            editor.putString(ChangePasswordDialog.KEY, mPwd);
-            editor.commit();
-            Intent intent = new Intent(LoginActivity.this, HomeActivity.class);
-            LoginActivity.this.startActivity(intent);
-            LoginActivity.this.finish();
-
-        }else{
-            EditText password = (EditText) findViewById(R.id.etPassword);
-
-            Button button  = (Button) findViewById(R.id.btSignIn);
-            password.setText("");
-            button.startAnimation(AnimationUtils.loadAnimation(LoginActivity.this,R.anim.shake_on_wrong_input));
-            Toast.makeText(this,result.message,Toast.LENGTH_SHORT).show();
-        }
+    protected void onResume() {
+        super.onResume();
+        mSubmit.callOnClick();
     }
 }
 

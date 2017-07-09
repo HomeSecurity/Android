@@ -1,8 +1,9 @@
 package com.hosec.homesecurity.remote;
 
 import android.content.Context;
+import android.support.annotation.Nullable;
 import android.util.Log;
-import android.widget.Toast;
+
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -11,8 +12,8 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 import com.hosec.homesecurity.R;
+import com.hosec.homesecurity.model.Credentials;
 import com.hosec.homesecurity.model.Device;
-import com.hosec.homesecurity.model.DeviceItemInformation;
 import com.hosec.homesecurity.model.Notification;
 import com.hosec.homesecurity.model.Rule;
 
@@ -33,13 +34,14 @@ import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Created by D062572 on 19.06.2017.
+ * API-Wrapper to communicate with the alarm system
+ * This wrapper encapsulates all Web-Service calls and provides listener interfaces for each call.
+ * It was implemented using the singleton pattern.
  */
-
 public class RemoteAlarmSystem {
 
     /**
-     * Other classes and interfaces
+     * An instance of this class will be passed to every result listener after an API call was sent
      */
     public static class Result {
         public boolean success;
@@ -51,14 +53,20 @@ public class RemoteAlarmSystem {
         }
     }
 
+    /**
+     * the ResultListener interface that a client must implement to register callbacks for API-calls
+     */
     public interface ResultListener {
         public void onResult(Result result);
     }
 
+    /**
+     * helper class to simplify the code for loading device data, rule data and notification data
+     */
     private abstract class LoadResponseListener implements Response.Listener<JSONObject>,
             Response.ErrorListener {
 
-        public static final int COUNTER_MAX = 2;
+        public static final int COUNTER_MAX = 3;
         private AtomicInteger mCounter;
         private ResultListener mListener;
 
@@ -69,7 +77,7 @@ public class RemoteAlarmSystem {
 
         @Override
         public void onErrorResponse(VolleyError error) {
-            mListener.onResult(new Result(false, error.getMessage()));
+            mListener.onResult(new Result(false, mContext.getString(R.string.failed_to_load_data)));
         }
 
         @Override
@@ -79,7 +87,7 @@ public class RemoteAlarmSystem {
                 handleJSONObject(response);
                 i = mCounter.incrementAndGet();
                 if (i == COUNTER_MAX) {
-                    mListener.onResult(new Result(true, mContext.getString(R.string.Successful_Login)));
+                    mListener.onResult(new Result(true, mContext.getString(R.string.retrieved_data)));
                     mCounter.set(0);
                 }
             } catch (JSONException e) {
@@ -94,7 +102,10 @@ public class RemoteAlarmSystem {
     /**
      * Remote Alarm System fields
      */
+    private static final String CANCELABLE_TAG = "CANCELABLE";
+    private static final String NOT_CANCELABLE_TAG = "NOT_CANCELABLE";
     private static RemoteAlarmSystem msRemoteAlarmSystem;
+
     private Map<Long, Device> mDeviceMap;
     private Map<Date, Notification> mNotificationMap;
     private Map<Long, Rule> mRuleMap;
@@ -122,7 +133,7 @@ public class RemoteAlarmSystem {
             public int compare(Date d1, Date d2) {
                 return d1.after(d2) ? 1 : -1;
             }
-        });
+        }); //sort notifications by date
 
     }
 
@@ -146,10 +157,15 @@ public class RemoteAlarmSystem {
         mRuleMap = ruleMap;
     }
 
-    private synchronized void setmNotificationMap(Map<Date, Notification> notificationMap) {
+    private synchronized void setNotificationMap(Map<Date, Notification> notificationMap) {
         mNotificationMap = notificationMap;
     }
 
+    /**
+     * Constructs device object from json data
+     * @param json
+     * @throws JSONException
+     */
     private void parseDevices(JSONObject json) throws JSONException {
         Map<Long, Device> devices = new HashMap();
         Iterator<String> iter = json.keys();
@@ -164,6 +180,11 @@ public class RemoteAlarmSystem {
         setDeviceMap(devices);
     }
 
+    /**
+     * Constructs rule objects from json data
+     * @param json
+     * @throws JSONException
+     */
     private void parseRules(JSONObject json) throws JSONException {
         Map<Long, Rule> rules = new HashMap();
         List<Device> devices = getDeviceList();
@@ -175,6 +196,11 @@ public class RemoteAlarmSystem {
         setRuleMap(rules);
     }
 
+    /**
+     * Construts notification objects from json data
+     * @param json
+     * @throws JSONException
+     */
     private void parseNotifications(JSONObject json) throws JSONException {
         Map<Date, Notification> notifications = new HashMap();
         Iterator<String> iter = json.keys();
@@ -182,13 +208,19 @@ public class RemoteAlarmSystem {
             Notification notification = new Notification(json.getJSONObject(iter.next()), mRuleMap);
             notifications.put(notification.getDate(), notification);
         }
-        setmNotificationMap(notifications);
+        setNotificationMap(notifications);
     }
 
     private String buildUrl(String path) {
         return "http://" + mHost + ":8080" + path;
     }
 
+    /**
+     * loads device, rule and notification data at the same time to ease the maintenance of consistency
+     * first all device information are loaded, second all rule information which get linked to the respective devices
+     * third notification information are loaded
+     * @param resultListener
+     */
     public void loadData(final RemoteAlarmSystem.ResultListener resultListener) {
         final AtomicInteger counter = new AtomicInteger();
         counter.set(0);
@@ -203,6 +235,7 @@ public class RemoteAlarmSystem {
 
         requestNotifications = new JsonObjectRequest(Request.Method.GET, buildUrl("/notificationlist"),
                 null, listenerNotifications, listenerNotifications);
+        requestNotifications.setTag(CANCELABLE_TAG);
 
         LoadResponseListener listenerRules = new LoadResponseListener(counter, resultListener) {
             @Override
@@ -214,6 +247,8 @@ public class RemoteAlarmSystem {
 
         requestRules = new JsonObjectRequest(Request.Method.GET, buildUrl("/rulelist"),
                 null, listenerRules, listenerRules);
+        requestRules.setTag(CANCELABLE_TAG);
+
 
         LoadResponseListener listenerDevices = new LoadResponseListener(counter, resultListener) {
             @Override
@@ -226,12 +261,20 @@ public class RemoteAlarmSystem {
 
         requestDevices = new JsonObjectRequest(Request.Method.GET, buildUrl("/componentlist"),
                 null, listenerDevices, listenerDevices);
+        requestDevices.setTag(CANCELABLE_TAG);
 
         mRequestQueue.add(requestDevices);
 
     }
 
 
+    /**
+     * Logs on to the alarm system and stores the session cookie returned in the cookie manager for future requests
+     * @param host
+     * @param username
+     * @param password
+     * @param resultListener
+     */
     public void logOnToSystem(String host, String username, String password,
                               final RemoteAlarmSystem.ResultListener resultListener) {
 
@@ -255,7 +298,7 @@ public class RemoteAlarmSystem {
         Response.ErrorListener errorListener = new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-                resultListener.onResult(new Result(false, error.getMessage()));
+                resultListener.onResult(new Result(false,  mContext.getString(R.string.Failed_Login)));
             }
         };
 
@@ -270,12 +313,16 @@ public class RemoteAlarmSystem {
 
         JsonObjectRequest jsObjRequest = new JsonObjectRequest(Request.Method.POST, buildUrl("/login"),
                 object, respListener, errorListener);
+        jsObjRequest.setTag(CANCELABLE_TAG);
 
         mRequestQueue.add(jsObjRequest);
 
 
     }
 
+    /**
+     * helper to avoid code duplication
+     */
     private void callRuleApi(final Rule rule, final RemoteAlarmSystem.ResultListener resultListener,
                              int method, String path) {
         try {
@@ -298,6 +345,7 @@ public class RemoteAlarmSystem {
 
             JsonObjectRequest jsObjRequest = new JsonObjectRequest(method, buildUrl(path),
                     obj, respListener, errorListener);
+            jsObjRequest.setTag(CANCELABLE_TAG);
 
             mRequestQueue.add(jsObjRequest);
 
@@ -306,15 +354,30 @@ public class RemoteAlarmSystem {
         }
     }
 
+    /**
+     * adds a rule
+     * @param rule
+     * @param resultListener
+     */
     public void addRule(Rule rule, final RemoteAlarmSystem.ResultListener resultListener) {
 
         callRuleApi(rule, resultListener, Request.Method.POST, "/addrule");
     }
 
+    /**
+     * updates a rule
+     * @param rule
+     * @param resultListener
+     */
     public void updateRule(Rule rule, final RemoteAlarmSystem.ResultListener resultListener) {
         callRuleApi(rule, resultListener, Request.Method.PUT, "/updaterule");
     }
 
+    /**
+     * uodates device
+     * @param device
+     * @param resultListener
+     */
     public void updateDevice(final Device device, final RemoteAlarmSystem.ResultListener resultListener) {
         try {
             JSONObject obj = device.toJSON();
@@ -336,6 +399,7 @@ public class RemoteAlarmSystem {
 
             JsonObjectRequest jsObjRequest = new JsonObjectRequest(Request.Method.PUT, buildUrl("/updatecomponent"),
                     obj, respListener, errorListener);
+            jsObjRequest.setTag(CANCELABLE_TAG);
 
             mRequestQueue.add(jsObjRequest);
 
@@ -344,7 +408,12 @@ public class RemoteAlarmSystem {
         }
     }
 
-    public void setMessagingToken(String token) {
+    /**
+     * sends the fcm token to the alarm system in order to receive push notifications from it
+     * @param token
+     * @param listener
+     */
+    public void setMessagingToken(String token, @Nullable final ResultListener listener) {
 
         final String TAG = mContext.getString(R.string.HOME_SECURITY_LOG);
         try {
@@ -355,7 +424,10 @@ public class RemoteAlarmSystem {
             Response.Listener<JSONObject> respListener = new Response.Listener<JSONObject>() {
                 @Override
                 public void onResponse(JSONObject response) {
-                    Log.i(TAG, "New token was refreshed successfully");
+                    Log.i(TAG, mContext.getString(R.string.successful_token_refresh));
+                    if(listener != null){
+                        listener.onResult(new Result(true, mContext.getString(R.string.successful_token_refresh)));
+                    }
                 }
             };
 
@@ -363,11 +435,15 @@ public class RemoteAlarmSystem {
                 @Override
                 public void onErrorResponse(VolleyError error) {
                     Log.i(TAG, error.getMessage() + " " + mContext.getString(R.string.Token_Fail));
+                    if(listener != null){
+                        listener.onResult(new Result(false, error.getMessage()));
+                    }
                 }
             };
 
             JsonObjectRequest jsObjRequest = new JsonObjectRequest(Request.Method.POST, buildUrl("/settoken"),
                     obj, respListener, errorListener);
+            jsObjRequest.setTag(NOT_CANCELABLE_TAG);
 
             mRequestQueue.add(jsObjRequest);
 
@@ -376,6 +452,9 @@ public class RemoteAlarmSystem {
         }
     }
 
+    /**
+     * starts the registration mode of the alarm system which lasts for 60 seconds.
+     */
     public void startRegistrationMode() {
         final String TAG = mContext.getString(R.string.HOME_SECURITY_LOG);
         Response.Listener<JSONObject> respListener = new Response.Listener<JSONObject>() {
@@ -394,10 +473,15 @@ public class RemoteAlarmSystem {
 
         JsonObjectRequest jsObjRequest = new JsonObjectRequest(Request.Method.GET, buildUrl("/registration"),
                 null, respListener, errorListener);
+        jsObjRequest.setTag(NOT_CANCELABLE_TAG);
 
         mRequestQueue.add(jsObjRequest);
     }
 
+    /**
+     * if the alarm of the remote system is triggered, this method will turn it off
+     * @param resultListener
+     */
     public void resetAlarm(final RemoteAlarmSystem.ResultListener resultListener) {
         final String TAG = mContext.getString(R.string.HOME_SECURITY_LOG);
         Response.Listener<JSONObject> respListener = new Response.Listener<JSONObject>() {
@@ -418,8 +502,58 @@ public class RemoteAlarmSystem {
 
         JsonObjectRequest jsObjRequest = new JsonObjectRequest(Request.Method.GET, buildUrl("/resetalarm"),
                 null, respListener, errorListener);
+        jsObjRequest.setTag(CANCELABLE_TAG);
 
         mRequestQueue.add(jsObjRequest);
+    }
+
+    /**
+     * updates user credentials on the alarm system
+     * @param creds
+     * @param resultListener
+     */
+    public void updateCredentials(Credentials creds, final RemoteAlarmSystem.ResultListener resultListener) {
+        final String TAG = mContext.getString(R.string.HOME_SECURITY_LOG);
+        try {
+            JSONObject obj = new JSONObject();
+            obj.put("username", creds.getUsername());
+            obj.put("password", creds.getPassword());
+
+
+            Response.Listener<JSONObject> respListener = new Response.Listener<JSONObject>() {
+                @Override
+                public void onResponse(JSONObject response) {
+                    try {
+                        resultListener.onResult(new Result(response.getBoolean("output"),""));
+                    } catch (JSONException e) {
+                        resultListener.onResult(new Result(false, mContext.getString(R.string.invalid_json)));
+                    }
+                }
+            };
+
+            Response.ErrorListener errorListener = new Response.ErrorListener() {
+                @Override
+                public void onErrorResponse(VolleyError error) {
+                    resultListener.onResult(new Result(false,error.getMessage()));
+                }
+            };
+
+            JsonObjectRequest jsObjRequest = new JsonObjectRequest(Request.Method.POST, buildUrl("/changecredentials"),
+                    obj, respListener, errorListener);
+            jsObjRequest.setTag(CANCELABLE_TAG);
+
+            mRequestQueue.add(jsObjRequest);
+
+        } catch (JSONException e) {
+            resultListener.onResult(new Result(false, mContext.getString(R.string.invalid_json)));
+        }
+    }
+
+    /**
+     * cancels all cancelable requests
+     */
+    public void cancelAll(){
+        mRequestQueue.cancelAll(CANCELABLE_TAG);
     }
 
 }

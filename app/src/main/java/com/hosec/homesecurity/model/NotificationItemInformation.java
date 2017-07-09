@@ -5,7 +5,6 @@ import android.content.Intent;
 import android.view.View;
 
 import com.hosec.homesecurity.R;
-import com.hosec.homesecurity.activities.DeviceDetailActivity;
 import com.hosec.homesecurity.activities.HomeActivity;
 import com.hosec.homesecurity.activities.NotificationDetailActivity;
 
