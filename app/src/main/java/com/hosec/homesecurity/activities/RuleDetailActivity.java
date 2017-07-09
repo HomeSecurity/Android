@@ -22,19 +22,25 @@ import com.hosec.homesecurity.model.Device;
 import com.hosec.homesecurity.model.ListItemInformation;
 import com.hosec.homesecurity.model.Rule;
 import com.hosec.homesecurity.remote.RemoteAlarmSystem;
+import com.hosec.homesecurity.activities.dialogs.AddDeviceToRuleDialog;
 
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-
-public class RuleDetailActivity extends AppCompatActivity
+/**
+ * Displays rule information
+ * Basically, a rule contains a list of sensors and actors. If all sensors are triggered the rule
+ * will be activated and all actors will be triggered as well. This activity provides an interface
+ * to the user to edit an existing or a newly created rule.
+ */
+public class RuleDetailActivity extends RemoteAPIActivity
         implements AddDeviceToRuleDialog.AddDeviceDialogListener {
 
     public static final String RULE_KEY = "RULE";
     public static final String NEW_KEY = "NEW";
 
+    //tags and codes that are used to remember state
     private static final String DIALOG_KEY = "ADD_DEVICE";
     private static final String TAB_SENSOR = "TAB_SENSOR";
     private static final int SENSOR_TAB_INDEX = 0;
@@ -48,6 +54,9 @@ public class RuleDetailActivity extends AppCompatActivity
     private TabHost mHost;
     private boolean isNewRule;
 
+    /**
+     * Called when a new device is supposed to be added to a rule
+     */
     private View.OnClickListener mAddListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
@@ -57,6 +66,7 @@ public class RuleDetailActivity extends AppCompatActivity
             Bundle bundle = new Bundle();
             GeneralListFragment frag = getCurrentDeviceListFragment();
 
+            //save state before starting the dialog
             bundle.putBoolean(AddDeviceToRuleDialog.SENSOR_KEY, isSensorTabSelected());
             bundle.putSerializable(AddDeviceToRuleDialog.KNOWN_DEVICES_KEY, getListItemsAsDeviceList(frag.getData()));
             dialog.setArguments(bundle);
@@ -80,7 +90,7 @@ public class RuleDetailActivity extends AppCompatActivity
         Toolbar toolBar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolBar);
         ActionBar ab = getSupportActionBar();
-        // Enable the Up button
+
         ab.setDisplayHomeAsUpEnabled(true);
 
         //prepare tabs
@@ -115,6 +125,9 @@ public class RuleDetailActivity extends AppCompatActivity
 
     }
 
+    /**
+     * remove sensors/actors from rule
+     */
     private void onRemove() {
         GeneralListFragment frag = getCurrentDeviceListFragment();
 
@@ -133,7 +146,7 @@ public class RuleDetailActivity extends AppCompatActivity
         return mHost.getCurrentTab() == SENSOR_TAB_INDEX;
     }
 
-    private GeneralListFragment getCurrentDeviceListFragment(){
+    private GeneralListFragment getCurrentDeviceListFragment() {
         return isSensorTabSelected() ? mSensorListFragment : mActorListFragment;
     }
 
@@ -169,6 +182,14 @@ public class RuleDetailActivity extends AppCompatActivity
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.detail_menu, menu);
+
+        final RemoteAlarmSystem.ResultListener listener = new RemoteAlarmSystem.ResultListener() {
+            @Override
+            public void onResult(RemoteAlarmSystem.Result result) {
+                finish();
+            }
+        };
+
         menu.findItem(R.id.action_save).setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
             @Override
             public boolean onMenuItemClick(MenuItem item) {
@@ -181,12 +202,13 @@ public class RuleDetailActivity extends AppCompatActivity
 
                 mRule.setActors(newActors);
                 mRule.setSensors(newSensors);
+
                 if (isNewRule) {
-                    RemoteAlarmSystem.addNewRule(mRule);
+                    mRemoteAlarmSystem.addRule(mRule, listener);
                 } else {
-                    RemoteAlarmSystem.updateRuleInformation(mRule);
+                    mRemoteAlarmSystem.updateRule(mRule, listener);
                 }
-                finish();
+
                 return true;
             }
         });
@@ -204,10 +226,7 @@ public class RuleDetailActivity extends AppCompatActivity
 
     @Override
     public void onDialogNegativeClick(AddDeviceToRuleDialog dialog) {
-
+        //empty body
     }
 
-    public void testConnection(URL url){
-
-    }
 }

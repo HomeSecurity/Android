@@ -1,4 +1,4 @@
-package com.hosec.homesecurity.activities;
+package com.hosec.homesecurity.activities.dialogs;
 
 import android.app.AlertDialog;
 import android.content.Context;
@@ -11,19 +11,18 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.hosec.homesecurity.R;
+import com.hosec.homesecurity.model.Credentials;
 import com.hosec.homesecurity.remote.RemoteAlarmSystem;
+import com.hosec.homesecurity.remote.RemoteAlarmSystem.*;
 
 /**
- * Created by D062572 on 10.06.2017.
+ * Simple dialog to change the username
  */
-
 public class ChangeUsernameDialog extends DialogPreference {
 
-
-    public static final String KEY = "pref_key_username";
-    public static final String DEFAULT_VALUE = "dummy";
     private String mUsername;
     private Button mPositiveButton;
 
@@ -67,7 +66,7 @@ public class ChangeUsernameDialog extends DialogPreference {
     @Override
     protected void onSetInitialValue(boolean restorePersistedValue, Object defaultValue) {
         if (restorePersistedValue) {
-            mUsername = this.getPersistedString(DEFAULT_VALUE);
+            mUsername = this.getPersistedString(Credentials.DEFAULT_VALUE);
         } else {
             // Set default state from the XML attribute
             mUsername = (String) defaultValue;
@@ -77,9 +76,27 @@ public class ChangeUsernameDialog extends DialogPreference {
 
     @Override
     protected void onDialogClosed(boolean positiveResult) {
-        // When the user selects "OK", persist the new value
+        // When the user selects "OK", persist the new value and call remote system
         if (positiveResult) {
-            RemoteAlarmSystem.changeUsername(mUsername);
+
+            final Context context = this.getContext();
+            Credentials creds = Credentials.getStoredCredentials(context);
+            creds.setUsername(mUsername);
+
+            RemoteAlarmSystem.getInstance(context).updateCredentials(creds, new ResultListener() {
+                @Override
+                public void onResult(Result result) {
+                    String message;
+                    if(result.success){
+                        message = context.getString(R.string.updated_username);
+                    }else{
+                        message = result.message;
+                    }
+
+                    Toast.makeText(context,message,Toast.LENGTH_SHORT).show();
+                }
+            });
+
             persistString(mUsername);
         }
     }

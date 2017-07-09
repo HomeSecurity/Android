@@ -2,18 +2,18 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
     <PreferenceCategory
-        android:key="pref_key_hosec_system"
+        android:key="pref_hosec_system"
         android:title="@string/pref_hosec_system">
-        <com.hosec.homesecurity.activities.ChangeSystemDialog
-            android:key="pref_key_system_host"
+        <com.hosec.homesecurity.activities.dialogs.ChangeSystemDialog
+            android:key="system_pref_key"
             android:title="@string/pref_title_system_host" />
 
-        <com.hosec.homesecurity.activities.ChangeUsernameDialog
-            android:key="pref_key_username"
+        <com.hosec.homesecurity.activities.dialogs.ChangeUsernameDialog
+            android:key="username_pref_key"
             android:title="@string/pref_title_username" />
 
-        <com.hosec.homesecurity.activities.ChangePasswordDialog
-            android:key="pref_key_pwd"
+        <com.hosec.homesecurity.activities.dialogs.ChangePasswordDialog
+            android:key="password_pref_key"
             android:title="@string/pref_title_password" />
     </PreferenceCategory>
 </PreferenceScreen>
